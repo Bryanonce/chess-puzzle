@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react"
+import type { CSSProperties } from "react"
 import { OptionChess } from "./components/OptionChess"
 import { ChessBoard } from "./components/board/ChessBoard"
 import { ActionBar } from "./components/controls/ActionBar"
@@ -12,6 +13,7 @@ import { solvePuzzleAnyPieceOptimal, type SolveMove } from "./utils/solver"
 import "./App.css"
 
 export const App: React.FC = () => {
+  const MOVE_MS = 500
   const [dimensions, setDimensions] = useState<Dimensions>({ horizontal: 8, vertical: 8 })
   const [status, setStatus] = useState<GameStatus>("generate")
   const [selectedCell, setSelectedCell] = useState<Position | null>(null)
@@ -30,7 +32,7 @@ export const App: React.FC = () => {
   const [isAutoPlaying, setIsAutoPlaying] = useState(false)
   const autoPlayTokenRef = useRef(0)
   const [validationMessage, setValidationMessage] = useState("")
-  const { store, start, placePiece, setPuzzleInitial, setPuzzleEnd, calculateMoves, movePiece, movePieceDirect } =
+  const { store, start, placePiece, setPuzzleInitial, setPuzzleEnd, calculateMoves, movePieceDirect } =
     useChessPuzzle()
 
   const canGenerate = useMemo(() => isValidDimensions(dimensions), [dimensions])
@@ -97,7 +99,7 @@ export const App: React.FC = () => {
       start: store.puzzleInitial,
       end: store.puzzleEnd,
       maxNodes: 500_000,
-      maxMs: 1500,
+      maxMs: 2000,
     })
 
     setSolution({
@@ -122,16 +124,13 @@ export const App: React.FC = () => {
         piece: m.pieceType,
         id: Date.now(),
       })
-      window.setTimeout(() => {
-        // solo limpia si seguimos en el mismo autoplay
-        if (autoPlayTokenRef.current === token) setMoveAnimation(null)
-      }, 220)
 
-      // Aplicar movimiento real al tablero
+      // Esperar a que termine la animación antes de mutar el tablero (evita “saltos”)
+      await new Promise<void>((resolve) => window.setTimeout(resolve, MOVE_MS))
+      if (autoPlayTokenRef.current !== token) return
+
       movePieceDirect(m.from, m.to)
-
-      // Pausa de 1s para observar
-      await new Promise<void>((resolve) => window.setTimeout(resolve, 1000))
+      setMoveAnimation(null)
     }
 
     if (autoPlayTokenRef.current === token) {
@@ -164,17 +163,20 @@ export const App: React.FC = () => {
       case "move-piece":
         if (!pieceToMove) return
         const movingPiece = store.board[pieceToMove.row]?.[pieceToMove.cell]
-        const moved = movePiece(pieceToMove, position)
-        if (moved && movingPiece) {
+        // Para mantener consistencia con la animación suave, movemos “al final”
+        const isLegal = !!movingPiece
+        if (isLegal && movingPiece) {
           setMoveAnimation({
             from: pieceToMove,
             to: position,
             piece: movingPiece,
             id: Date.now(),
           })
+
           window.setTimeout(() => {
+            movePieceDirect(pieceToMove, position)
             setMoveAnimation(null)
-          }, 220)
+          }, MOVE_MS)
         }
         setSolution(null)
         if (!hasWon) {
@@ -211,7 +213,10 @@ export const App: React.FC = () => {
   }, [status, handleRestart])
 
   return (
-    <div className="app">
+    <div
+      className="app"
+      style={{ ["--move-ms" as string]: `${MOVE_MS}ms` } as CSSProperties}
+    >
       <StatusHeader status={status} validationMessage={validationMessage} />
       <DimensionForm dimensions={dimensions} onChange={setDimensions} />
 

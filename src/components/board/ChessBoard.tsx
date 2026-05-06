@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useMemo } from "react"
 import type { Board, PieceType, Position } from "../../types/chess"
 import { isPositionEqual } from "../../utils/board"
 import { ChessIcon } from "../ChessIcon"
@@ -25,16 +25,8 @@ export const ChessBoard: React.FC<ChessBoardProps> = ({
   onCellClick,
   moveAnimation,
 }) => {
-  const [animate, setAnimate] = useState(false)
-
-  useEffect(() => {
-    if (!moveAnimation) return
-    setAnimate(false)
-    const raf = window.requestAnimationFrame(() => setAnimate(true))
-    return () => window.cancelAnimationFrame(raf)
-  }, [moveAnimation?.id])
-
   const movingTo = useMemo(() => moveAnimation?.to ?? null, [moveAnimation])
+  const movingFrom = useMemo(() => moveAnimation?.from ?? null, [moveAnimation])
 
   const moveStyle = useMemo(() => {
     if (!moveAnimation) return null
@@ -44,15 +36,16 @@ export const ChessBoard: React.FC<ChessBoardProps> = ({
     return {
       top: moveAnimation.from.row * 72,
       left: moveAnimation.from.cell * 72,
-      transform: animate ? `translate(${dx}px, ${dy}px)` : "translate(0px, 0px)",
+      ["--dx" as any]: `${dx}px`,
+      ["--dy" as any]: `${dy}px`,
     }
-  }, [moveAnimation, animate])
+  }, [moveAnimation])
 
   return (
     <div className="board-wrapper">
       <div className="board-stage">
         {moveAnimation && moveStyle && (
-          <div className="move-piece" style={moveStyle}>
+          <div key={moveAnimation.id} className="move-piece is-animating" style={moveStyle}>
             <ChessIcon piece={moveAnimation.piece} />
           </div>
         )}
@@ -69,6 +62,8 @@ export const ChessBoard: React.FC<ChessBoardProps> = ({
             )
               const isMovingDestination =
                 !!movingTo && isPositionEqual(movingTo, cellPosition)
+              const isMovingSource =
+                !!movingFrom && isPositionEqual(movingFrom, cellPosition)
 
             return (
               <button
@@ -79,7 +74,7 @@ export const ChessBoard: React.FC<ChessBoardProps> = ({
                 onClick={() => onCellClick(cellPosition)}
               >
                 <div className={`movement-dot ${isPossibleCell ? "movement-visible" : ""}`} />
-                {piece && !isMovingDestination && (
+                {piece && !isMovingDestination && !isMovingSource && (
                   <ChessIcon
                     piece={piece}
                     style={{

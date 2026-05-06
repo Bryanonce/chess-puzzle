@@ -105,7 +105,40 @@
   justify-content: center;
   z-index: 10;
   pointer-events: none;
-  transition: transform 200ms ease-in-out;
+  will-change: transform, opacity;
+  opacity: 0.95;
+  transform: translate(0px, 0px) scale(1.02);
+}
+
+.move-piece.is-animating {
+  animation: move-arc var(--move-ms, 2000ms) linear forwards;
+}
+
+@keyframes move-arc {
+  0% {
+    transform: translate(0px, 0px) scale(1.03);
+    opacity: 0.92;
+  }
+  20% {
+    transform: translate(calc(var(--dx) * 0.20), calc(var(--dy) * 0.20 - 10px))
+      scale(1.04);
+  }
+  40% {
+    transform: translate(calc(var(--dx) * 0.40), calc(var(--dy) * 0.40 - 14px))
+      scale(1.045);
+  }
+  60% {
+    transform: translate(calc(var(--dx) * 0.60), calc(var(--dy) * 0.60 - 12px))
+      scale(1.04);
+  }
+  80% {
+    transform: translate(calc(var(--dx) * 0.80), calc(var(--dy) * 0.80 - 6px))
+      scale(1.035);
+  }
+  100% {
+    transform: translate(var(--dx), var(--dy)) scale(1.03);
+    opacity: 0.92;
+  }
 }
 
 #root, body, html {
