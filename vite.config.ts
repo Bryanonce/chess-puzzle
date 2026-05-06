@@ -5,6 +5,6 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   // GitHub Pages sirve el sitio bajo /<repo>/ (no en /)
-  // Cambia "Chess-Puzzle" si tu repositorio tiene otro nombre.
-  base: '/Chess-Puzzle/',
+  // Debe coincidir EXACTAMENTE con el nombre del repositorio.
+  base: '/chess-puzzle/',
 })
