@@ -64,6 +64,28 @@ export const useChessMovements = () => {
                 for (let j = 0; j < store.matrix[0].length; j++) {
                     if (j !== cellIndex) movements.push({ row: rowIndex, cell: j })
                 }
+
+                // Evitar movimientos que tengan una pieza que trunque el movimiento
+                movements = movements.filter(movement => {
+                    if (movement.row === rowIndex) {
+                        const min = Math.min(movement.cell, cellIndex)
+                        const max = Math.max(movement.cell, cellIndex)
+                        for (let j = min + 1; j < max; j++) {
+                            if (store.matrix[rowIndex][j].iconName) {
+                                return false
+                            }
+                        }
+                    } else if (movement.cell === cellIndex) {
+                        const min = Math.min(movement.row, rowIndex)
+                        const max = Math.max(movement.row, rowIndex)
+                        for (let i = min + 1; i < max; i++) {
+                            if (store.matrix[i][cellIndex].iconName) {
+                                return false
+                            }
+                        }
+                    }
+                    return true
+                })
                 break
             case "chess-knight":
                 const knightMoves = [
@@ -91,6 +113,25 @@ export const useChessMovements = () => {
                     if (rowIndex + i < store.matrix.length && cellIndex - i >= 0) movements.push({ row: rowIndex + i, cell: cellIndex - i })
                     if (rowIndex + i < store.matrix.length && cellIndex + i < store.matrix[0].length) movements.push({ row: rowIndex + i, cell: cellIndex + i })
                 }
+
+                // Evitar movimientos que tengan una pieza que trunque el movimiento
+                movements = movements.filter(movement => {
+                    const rowDiff = movement.row - rowIndex
+                    const cellDiff = movement.cell - cellIndex
+                    const stepRow = rowDiff === 0 ? 0 : rowDiff / Math.abs(rowDiff)
+                    const stepCell = cellDiff === 0 ? 0 : cellDiff / Math.abs(cellDiff)
+                    let currentRow = rowIndex + stepRow
+                    let currentCell = cellIndex + stepCell
+                    while (currentRow !== movement.row || currentCell !== movement.cell) {
+                        if (store.matrix[currentRow][currentCell].iconName) {
+                            return false
+                        }
+                        currentRow += stepRow
+                        currentCell += stepCell
+                    }
+                    return true
+                })
+            
                 break
             case "chess-queen":
                 for (let i = 0; i < store.matrix.length; i++) {
@@ -105,6 +146,44 @@ export const useChessMovements = () => {
                     if (rowIndex + i < store.matrix.length && cellIndex - i >= 0) movements.push({ row: rowIndex + i, cell: cellIndex - i })
                     if (rowIndex + i < store.matrix.length && cellIndex + i < store.matrix[0].length) movements.push({ row: rowIndex + i, cell: cellIndex + i })
                 }
+                // Evitar movimientos que tengan una pieza que trunque el movimiento
+                movements = movements.filter(movement => {
+                    if (movement.row === rowIndex || movement.cell === cellIndex) {
+                        if (movement.row === rowIndex) {
+                            const min = Math.min(movement.cell, cellIndex)
+                            const max = Math.max(movement.cell, cellIndex)
+                            for (let j = min + 1; j < max; j++) {
+                                if (store.matrix[rowIndex][j].iconName) {
+                                    return false
+                                }
+                            }
+                        } else if (movement.cell === cellIndex) {
+                            const min = Math.min(movement.row, rowIndex)
+                            const max = Math.max(movement.row, rowIndex)
+                            for (let i = min + 1; i < max; i++) {
+                                if (store.matrix[i][cellIndex].iconName) {
+                                    return false
+                                }
+                            }
+                        }
+                    } else {
+                        const rowDiff = movement.row - rowIndex
+                        const cellDiff = movement.cell - cellIndex
+                        const stepRow = rowDiff === 0 ? 0 : rowDiff / Math.abs(rowDiff)
+                        const stepCell = cellDiff === 0 ? 0 : cellDiff / Math.abs(cellDiff)
+                        let currentRow = rowIndex + stepRow
+                        let currentCell = cellIndex + stepCell
+                        while (currentRow !== movement.row || currentCell !== movement.cell) {
+                            if (store.matrix[currentRow][currentCell].iconName) {
+                                return false
+                            }
+                            currentRow += stepRow
+                            currentCell += stepCell
+                        }
+                    }
+                    return true
+                })
+                
                 break
             case "chess-king":
                 const kingMoves = [
