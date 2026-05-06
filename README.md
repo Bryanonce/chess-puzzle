@@ -101,6 +101,45 @@ npm run dev
 
 > Nota: Vite requiere Node moderno (20+). Si tu entorno usa Node 16, `build`/`lint` pueden fallar por versión de runtime.
 
+## Publicar en GitHub Pages (deploy)
+
+Esta app se puede publicar gratis en **GitHub Pages** usando **GitHub Actions**.
+
+### Requisitos
+
+- El repositorio debe estar en GitHub.
+- Tu branch principal debe llamarse `main` (el workflow está configurado así).
+
+### Paso 1: Configurar `base` de Vite
+
+GitHub Pages publica tu sitio bajo la ruta `/<nombre-del-repo>/`, por lo que Vite debe construirse con `base` correcto.
+
+En `vite.config.ts`:
+
+- Si tu repo se llama `Chess-Puzzle`, debes tener:
+  - `base: '/Chess-Puzzle/'`
+- Si tu repo tiene otro nombre, cambia ese valor a:
+  - `base: '/NOMBRE_REPO/'`
+
+### Paso 2: Activar Pages en GitHub
+
+1. En tu repositorio ve a **Settings → Pages**.
+2. En **Build and deployment**, selecciona **GitHub Actions**.
+
+### Paso 3: Push a `main`
+
+Cuando hagas push a `main`, GitHub Actions:
+
+- instala dependencias
+- ejecuta `npm run build`
+- publica `dist/` en GitHub Pages
+
+### URL final
+
+Tu sitio quedará disponible en:
+
+- `https://TU_USUARIO.github.io/NOMBRE_REPO/`
+
 ## Arquitectura (resumen)
 
 El proyecto está refactorizado para separar responsabilidades (principios SOLID):
