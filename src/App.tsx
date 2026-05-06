@@ -15,7 +15,7 @@ import "./App.css"
 export const App: React.FC = () => {
   const MOVE_MS = 500
   const [dimensions, setDimensions] = useState<Dimensions>({ horizontal: 6, vertical: 3 })
-  const [status, setStatus] = useState<GameStatus>("generate")
+  const [status, setStatus] = useState<GameStatus>("chooseDimensions")
   const [selectedCell, setSelectedCell] = useState<Position | null>(null)
   const [pieceToMove, setPieceToMove] = useState<Position | null>(null)
   const [moveAnimation, setMoveAnimation] = useState<{
@@ -32,7 +32,17 @@ export const App: React.FC = () => {
   const [isAutoPlaying, setIsAutoPlaying] = useState(false)
   const autoPlayTokenRef = useRef(0)
   const [validationMessage, setValidationMessage] = useState("")
-  const { store, start, placePiece, setPuzzleInitial, setPuzzleEnd, calculateMoves, movePieceDirect } =
+  const {
+    store,
+    start,
+    placePiece,
+    setPuzzleInitial,
+    setPuzzleEnd,
+    clearPuzzleInitial,
+    clearPuzzleEnd,
+    calculateMoves,
+    movePieceDirect,
+  } =
     useChessPuzzle()
 
   const canGenerate = useMemo(() => isValidDimensions(dimensions), [dimensions])
@@ -56,7 +66,9 @@ export const App: React.FC = () => {
     setValidationMessage("")
     setSelectedCell(null)
     setPieceToMove(null)
-    setStatus("setChessPieces")
+    clearPuzzleInitial()
+    clearPuzzleEnd()
+    setStatus("placePieces")
     setSolution(null)
   }
 
@@ -72,15 +84,19 @@ export const App: React.FC = () => {
     setSelectedCell(null)
     setPieceToMove(null)
     setMoveAnimation(null)
-    setStatus("setChessPieces")
+    setStatus("placePieces")
     setSolution(null)
+    clearPuzzleInitial()
+    clearPuzzleEnd()
   }
 
   const canSuggestSolution = useMemo(() => {
     return (
       !!store.puzzleInitial &&
       !!store.puzzleEnd &&
-      !!store.board[store.puzzleInitial.row]?.[store.puzzleInitial.cell]
+      !!store.board[store.puzzleInitial.row]?.[store.puzzleInitial.cell] &&
+      store.board[store.puzzleInitial.row]?.[store.puzzleInitial.cell] !== "obstacle" &&
+      !store.board[store.puzzleEnd.row]?.[store.puzzleEnd.cell]
     )
   }, [store.puzzleInitial, store.puzzleEnd, store.board])
 
@@ -141,21 +157,32 @@ export const App: React.FC = () => {
   const handleCellClick = (position: Position) => {
     if (isAutoPlaying) return
     switch (status) {
-      case "setChessPieces":
+      case "placePieces":
         setSelectedCell(position)
         break
-      case "setInitial":
+      case "selectPiece": {
+        const piece = store.board[position.row]?.[position.cell]
+        if (!piece || piece === "obstacle") {
+          setValidationMessage("Debes seleccionar una pieza válida (no obstacle).")
+          return
+        }
+        setValidationMessage("")
         setPuzzleInitial(position)
-        setSelectedCell(null)
-        setSolution(null)
         break
-      case "setEnd":
+      }
+      case "selectTarget": {
+        const cell = store.board[position.row]?.[position.cell]
+        if (cell) {
+          setValidationMessage("La casilla objetivo debe estar vacía (y no puede ser obstacle).")
+          return
+        }
+        setValidationMessage("")
         setPuzzleEnd(position)
-        setSelectedCell(null)
-        setSolution(null)
         break
+      }
       case "play":
         if (!store.board[position.row][position.cell]) return
+        if (store.board[position.row][position.cell] === "obstacle") return
         calculateMoves(position)
         setPieceToMove(position)
         setStatus("move-piece")
@@ -199,18 +226,50 @@ export const App: React.FC = () => {
 
   const nextButton = useMemo(() => {
     switch (status) {
-      case "setChessPieces":
-        return { label: "Continuar", onClick: () => setStatus("setInitial") }
-      case "setInitial":
-        return { label: "Definir final", onClick: () => setStatus("setEnd") }
-      case "setEnd":
-        return { label: "Jugar", onClick: () => setStatus("play") }
+      case "placePieces":
+        return {
+          label: "Siguiente: elegir pieza",
+          onClick: () => {
+            setValidationMessage("")
+            setSelectedCell(null)
+            setStatus("selectPiece")
+          },
+        }
+      case "selectPiece":
+        return {
+          label: "Siguiente: elegir casilla",
+          onClick: () => {
+            if (!store.puzzleInitial || !store.board[store.puzzleInitial.row]?.[store.puzzleInitial.cell]) {
+              setValidationMessage("Primero selecciona una pieza objetivo.")
+              return
+            }
+            setValidationMessage("")
+            setStatus("selectTarget")
+          },
+        }
+      case "selectTarget":
+        return {
+          label: "Siguiente: jugar",
+          onClick: () => {
+            if (!store.puzzleEnd) {
+              setValidationMessage("Primero selecciona una casilla objetivo.")
+              return
+            }
+            const endCell = store.board[store.puzzleEnd.row]?.[store.puzzleEnd.cell]
+            if (endCell) {
+              setValidationMessage("La casilla objetivo debe estar vacía.")
+              return
+            }
+            setValidationMessage("")
+            setStatus("play")
+          },
+        }
       case "won":
         return { label: "Reiniciar", onClick: handleRestart }
       default:
         return null
     }
-  }, [status, handleRestart])
+  }, [status, handleRestart, store.puzzleInitial, store.puzzleEnd, store.board])
 
   return (
     <div
@@ -222,18 +281,18 @@ export const App: React.FC = () => {
 
       <ActionBar
         primary={
-          status === "generate"
+          status === "chooseDimensions"
             ? { label: "Generar", disabled: !canGenerate, onClick: handleGenerate }
             : undefined
         }
         secondary={nextButton ?? undefined}
       />
 
-      {selectedCell && status === "setChessPieces" && <OptionChess handleOnSelect={handlePieceSelect} />}
+      {selectedCell && status === "placePieces" && <OptionChess handleOnSelect={handlePieceSelect} />}
 
       <ActionBar
         primary={
-          status !== "generate"
+          status === "play"
             ? {
               label: isAutoPlaying ? "Detener" : "Sugerir solución",
               disabled: !isAutoPlaying && !canSuggestSolution,

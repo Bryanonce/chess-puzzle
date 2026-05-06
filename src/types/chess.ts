@@ -21,10 +21,10 @@ export type BoardCell = PieceType | null
 export type Board = BoardCell[][]
 
 export type GameStatus =
-  | "generate"
-  | "setChessPieces"
-  | "setInitial"
-  | "setEnd"
+  | "chooseDimensions"
+  | "placePieces"
+  | "selectPiece"
+  | "selectTarget"
   | "play"
   | "move-piece"
   | "won"

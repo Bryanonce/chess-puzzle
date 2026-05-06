@@ -51,8 +51,16 @@ export const useChessPuzzle = () => {
     setStore((prev) => ({ ...prev, puzzleInitial: position }))
   }
 
+  const clearPuzzleInitial = () => {
+    setStore((prev) => ({ ...prev, puzzleInitial: null }))
+  }
+
   const setPuzzleEnd = (position: Position) => {
     setStore((prev) => ({ ...prev, puzzleEnd: position }))
+  }
+
+  const clearPuzzleEnd = () => {
+    setStore((prev) => ({ ...prev, puzzleEnd: null }))
   }
 
   const calculateMoves = (position: Position) => {
@@ -143,6 +151,8 @@ export const useChessPuzzle = () => {
     placePiece,
     setPuzzleInitial,
     setPuzzleEnd,
+    clearPuzzleInitial,
+    clearPuzzleEnd,
     calculateMoves,
     movePiece,
     movePieceDirect,

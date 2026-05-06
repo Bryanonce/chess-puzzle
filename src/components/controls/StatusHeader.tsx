@@ -2,16 +2,16 @@ import type { GameStatus } from "../../types/chess"
 
 const getStatusLabel = (status: GameStatus): string => {
   switch (status) {
-    case "generate":
-      return "Genera un tablero"
-    case "setChessPieces":
-      return "Selecciona celdas y agrega piezas"
-    case "setInitial":
-      return "Selecciona la posicion inicial"
-    case "setEnd":
-      return "Selecciona la posicion final"
+    case "chooseDimensions":
+      return "Paso 1: Escoge el tamaño del tablero (por defecto 3×6)."
+    case "placePieces":
+      return "Paso 2: Coloca las piezas en el tablero. 'obstacle' es casilla muerta (no se mueve y nadie puede caer ahí)."
+    case "selectPiece":
+      return "Paso 3: Selecciona la pieza objetivo (la que debe llegar a la meta)."
+    case "selectTarget":
+      return "Paso 4: Selecciona la casilla objetivo (debe estar vacía y no ser casilla muerta)."
     case "play":
-      return "Elige una pieza para ver sus movimientos"
+      return "Paso 5: Juega moviendo piezas o pide una solución."
     case "move-piece":
       return "Elige el destino de la pieza"
     case "won":
