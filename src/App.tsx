@@ -14,7 +14,7 @@ import "./App.css"
 
 export const App: React.FC = () => {
   const MOVE_MS = 500
-  const [dimensions, setDimensions] = useState<Dimensions>({ horizontal: 3, vertical: 6 })
+  const [dimensions, setDimensions] = useState<Dimensions>({ horizontal: 6, vertical: 3 })
   const [status, setStatus] = useState<GameStatus>("generate")
   const [selectedCell, setSelectedCell] = useState<Position | null>(null)
   const [pieceToMove, setPieceToMove] = useState<Position | null>(null)
