@@ -1,14 +1,15 @@
 import { type IconDefinition } from "@fortawesome/free-solid-svg-icons"
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import {
     faChessBishop,
     faChessKing,
     faChessKnight,
     faChessPawn,
     faChessQueen,
-    faChessRook
+    faChessRook,
+    faSkullCrossbones
 } from "@fortawesome/free-solid-svg-icons"
 import { ChessIcon } from "./ChessIcon"
+
 
 const icons = [
     faChessBishop,
@@ -16,7 +17,8 @@ const icons = [
     faChessKnight,
     faChessPawn,
     faChessQueen,
-    faChessRook
+    faChessRook,
+    faSkullCrossbones
 ]
 
 interface IOptionChess {
@@ -49,6 +51,7 @@ export const OptionChess: React.FC<IOptionChess> = ({ handleOnSelect }) => {
                 top: window.innerHeight / 2,
                 left: window.innerWidth / 2,
                 transform: "translate(-50%, -50%)",
+                zIndex: 1000
             }}
         >
             {icons.map((icon) => (

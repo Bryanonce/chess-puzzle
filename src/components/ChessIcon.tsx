@@ -16,6 +16,7 @@ export const ChessIcon: React.FC<IChessIcon> = (params) => {
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
+        ...rest.style
     }}>
         <FontAwesomeIcon icon={icon} />
     </div>
