@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { ChessIcon } from "./components/ChessIcon"
 import { InputComponents } from "./components/InputComponents"
 import { OptionChess } from "./components/OptionChess"
@@ -21,6 +21,8 @@ const getStatusLabel = (status: GameStatus): string => {
       return "Elige una pieza para ver sus movimientos"
     case "move-piece":
       return "Elige el destino de la pieza"
+    case "won":
+      return "Ganaste, llegaste a la posicion final"
     default:
       return ""
   }
@@ -36,6 +38,15 @@ export const App: React.FC = () => {
     useChessPuzzle()
 
   const canGenerate = useMemo(() => isValidDimensions(dimensions), [dimensions])
+  const hasWon = useMemo(() => {
+    return !!store.puzzleInitial && !!store.puzzleEnd && isPositionEqual(store.puzzleInitial, store.puzzleEnd)
+  }, [store.puzzleInitial, store.puzzleEnd])
+
+  useEffect(() => {
+    if (hasWon) {
+      setStatus("won")
+    }
+  }, [hasWon])
 
   const handleGenerate = () => {
     if (!start(dimensions)) {
@@ -70,7 +81,11 @@ export const App: React.FC = () => {
       case "move-piece":
         if (!pieceToMove) return
         movePiece(pieceToMove, position)
-        setStatus("play")
+        if (!hasWon) {
+          setStatus("play")
+        }
+        break
+      case "won":
         break
       default:
         break
@@ -91,10 +106,25 @@ export const App: React.FC = () => {
         return { label: "Definir final", onClick: () => setStatus("setEnd") }
       case "setEnd":
         return { label: "Jugar", onClick: () => setStatus("play") }
+      case "won":
+        return {
+          label: "Reiniciar",
+          onClick: () => {
+            const started = start(dimensions)
+            if (!started) {
+              setValidationMessage("Ingresa dimensiones validas y mayores a cero.")
+              return
+            }
+            setValidationMessage("")
+            setSelectedCell(null)
+            setPieceToMove(null)
+            setStatus("setChessPieces")
+          },
+        }
       default:
         return null
     }
-  }, [status])
+  }, [status, dimensions, start])
 
   return (
     <div className="app">
@@ -136,6 +166,7 @@ export const App: React.FC = () => {
       </div>
 
       {validationMessage && <p className="error-text">{validationMessage}</p>}
+      {status === "won" && <p className="success-text">Felicidades, eres el ganador.</p>}
       {selectedCell && status === "setChessPieces" && <OptionChess handleOnSelect={handlePieceSelect} />}
 
       <div className="board-wrapper">

@@ -1,73 +1,38 @@
-# React + TypeScript + Vite
+# Chess Puzzle
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Aplicación web en **React + TypeScript (Vite)** para crear y jugar un **puzzle de ajedrez** sobre un tablero de tamaño configurable.
 
-Currently, two official plugins are available:
+El objetivo es **mover la pieza inicial** hasta la **posición final**. Cuando `puzzleInitial` y `puzzleEnd` son iguales, el juego termina y el usuario **gana**.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Cómo se juega
 
-## React Compiler
+- **Generar tablero**: ingresa dimensiones (vertical y horizontal) y presiona **Generar**.
+- **Colocar piezas**: haz click en una celda y elige una pieza (peón, torre, caballo, alfil, reina, rey u obstáculo).
+- **Definir inicio**: cambia a “posición inicial” y selecciona la celda donde inicia el puzzle.
+- **Definir final**: cambia a “posición final” y selecciona la celda objetivo.
+- **Jugar**:
+  - Selecciona una pieza en el tablero para ver sus movimientos posibles.
+  - Selecciona una celda marcada para moverla.
+  - **Victoria**: si la pieza inicial llega a la celda final, aparece el estado **Ganaste** y puedes **Reiniciar**.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Ejecutar en local
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+> Nota: Vite requiere Node moderno (20+). Si tu entorno usa Node 16, `build`/`lint` pueden fallar por versión de runtime.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Arquitectura (resumen)
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+El proyecto está refactorizado para separar responsabilidades (principios SOLID):
+
+- **Dominio (tipos)**: `src/types/chess.ts` (posición, dimensiones, tipo de pieza, tablero, estados del juego).
+- **Reglas puras**:
+  - `src/utils/board.ts`: creación/mutación inmutable del tablero y validaciones.
+  - `src/utils/movements.ts`: cálculo de movimientos por tipo de pieza (sin UI).
+- **UI mapping**: `src/utils/pieces.ts` mapea `PieceType` a íconos FontAwesome (la UI depende del mapeo, no el dominio).
+- **Estado/uso en React**: `src/hooks/useChessPuzzle.ts` orquesta el estado del puzzle.
+- **Presentación**: `src/components/*` y `src/App.tsx`.
+

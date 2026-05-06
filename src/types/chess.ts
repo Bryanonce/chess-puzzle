@@ -27,3 +27,4 @@ export type GameStatus =
   | "setEnd"
   | "play"
   | "move-piece"
+  | "won"

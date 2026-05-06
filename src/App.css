@@ -38,6 +38,12 @@
   color: #b00020;
 }
 
+.success-text {
+  margin: 8px 0;
+  color: #0f7a24;
+  font-weight: 700;
+}
+
 .board-wrapper {
   width: 100%;
   display: flex;
