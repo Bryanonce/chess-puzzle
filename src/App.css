@@ -52,6 +52,10 @@
   padding: 16px;
 }
 
+.board-stage {
+  position: relative;
+}
+
 .board-row {
   display: flex;
 }
@@ -90,6 +94,18 @@
 
 .movement-visible {
   background-color: rgba(0, 255, 0, 0.5);
+}
+
+.move-piece {
+  position: absolute;
+  width: 72px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  pointer-events: none;
+  transition: transform 200ms ease-in-out;
 }
 
 #root, body, html {

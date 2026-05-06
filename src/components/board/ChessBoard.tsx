@@ -1,4 +1,5 @@
-import type { Board, Position } from "../../types/chess"
+import { useEffect, useMemo, useState } from "react"
+import type { Board, PieceType, Position } from "../../types/chess"
 import { isPositionEqual } from "../../utils/board"
 import { ChessIcon } from "../ChessIcon"
 
@@ -8,6 +9,12 @@ interface ChessBoardProps {
   puzzleEnd: Position | null
   possibleMovements: Position[]
   onCellClick: (position: Position) => void
+  moveAnimation?: {
+    from: Position
+    to: Position
+    piece: PieceType
+    id: number
+  } | null
 }
 
 export const ChessBoard: React.FC<ChessBoardProps> = ({
@@ -16,12 +23,43 @@ export const ChessBoard: React.FC<ChessBoardProps> = ({
   puzzleEnd,
   possibleMovements,
   onCellClick,
+  moveAnimation,
 }) => {
+  const [animate, setAnimate] = useState(false)
+
+  useEffect(() => {
+    if (!moveAnimation) return
+    setAnimate(false)
+    const raf = window.requestAnimationFrame(() => setAnimate(true))
+    return () => window.cancelAnimationFrame(raf)
+  }, [moveAnimation?.id])
+
+  const movingTo = useMemo(() => moveAnimation?.to ?? null, [moveAnimation])
+
+  const moveStyle = useMemo(() => {
+    if (!moveAnimation) return null
+    const dx = (moveAnimation.to.cell - moveAnimation.from.cell) * 72
+    const dy = (moveAnimation.to.row - moveAnimation.from.row) * 72
+
+    return {
+      top: moveAnimation.from.row * 72,
+      left: moveAnimation.from.cell * 72,
+      transform: animate ? `translate(${dx}px, ${dy}px)` : "translate(0px, 0px)",
+    }
+  }, [moveAnimation, animate])
+
   return (
     <div className="board-wrapper">
-      {board.map((row, rowIndex) => (
-        <div className="board-row" key={rowIndex}>
-          {row.map((piece, cellIndex) => {
+      <div className="board-stage">
+        {moveAnimation && moveStyle && (
+          <div className="move-piece" style={moveStyle}>
+            <ChessIcon piece={moveAnimation.piece} />
+          </div>
+        )}
+
+        {board.map((row, rowIndex) => (
+          <div className="board-row" key={rowIndex}>
+            {row.map((piece, cellIndex) => {
             const cellPosition = { row: rowIndex, cell: cellIndex }
             const isEndCell = !!puzzleEnd && isPositionEqual(puzzleEnd, cellPosition)
             const isInitialCell =
@@ -29,6 +67,8 @@ export const ChessBoard: React.FC<ChessBoardProps> = ({
             const isPossibleCell = possibleMovements.some((movement) =>
               isPositionEqual(movement, cellPosition),
             )
+              const isMovingDestination =
+                !!movingTo && isPositionEqual(movingTo, cellPosition)
 
             return (
               <button
@@ -39,7 +79,7 @@ export const ChessBoard: React.FC<ChessBoardProps> = ({
                 onClick={() => onCellClick(cellPosition)}
               >
                 <div className={`movement-dot ${isPossibleCell ? "movement-visible" : ""}`} />
-                {piece && (
+                {piece && !isMovingDestination && (
                   <ChessIcon
                     piece={piece}
                     style={{
@@ -49,9 +89,10 @@ export const ChessBoard: React.FC<ChessBoardProps> = ({
                 )}
               </button>
             )
-          })}
-        </div>
-      ))}
+            })}
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
