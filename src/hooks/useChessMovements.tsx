@@ -145,7 +145,6 @@ export const useChessMovements = () => {
             newMatrix[piece.row][piece.cell] = {} as IconDefinition
         }
         setStore((prev) => ({ ...prev, matrix: newMatrix, posibleMovements: [] }))
-        
     }
 
     return { store, start, set, setPuzzleInitial, setPuzzleEnd, verifyMovements, move }
