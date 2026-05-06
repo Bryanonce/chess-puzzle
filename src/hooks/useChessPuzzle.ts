@@ -100,6 +100,39 @@ export const useChessPuzzle = () => {
     return moved
   }
 
+  const movePieceDirect = (from: Position, to: Position): boolean => {
+    let moved = false
+
+    setStore((prev) => {
+      const originPiece = prev.board[from.row]?.[from.cell] ?? null
+      if (!originPiece) {
+        return { ...prev, possibleMovements: [] }
+      }
+
+      const legalMoves = getPossibleMoves(prev.board, from, originPiece)
+      const canMove = legalMoves.some((movement) => isPositionEqual(movement, to))
+      if (!canMove) {
+        return { ...prev, possibleMovements: [] }
+      }
+
+      let board = setPiece(prev.board, to, originPiece)
+      board = setPiece(board, from, null)
+      moved = true
+
+      return {
+        ...prev,
+        board,
+        puzzleInitial:
+          prev.puzzleInitial && isPositionEqual(prev.puzzleInitial, from)
+            ? to
+            : prev.puzzleInitial,
+        possibleMovements: [],
+      }
+    })
+
+    return moved
+  }
+
   const clearPossibleMoves = () => {
     setStore((prev) => ({ ...prev, possibleMovements: [] }))
   }
@@ -112,6 +145,7 @@ export const useChessPuzzle = () => {
     setPuzzleEnd,
     calculateMoves,
     movePiece,
+    movePieceDirect,
     clearPossibleMoves,
   }
 }

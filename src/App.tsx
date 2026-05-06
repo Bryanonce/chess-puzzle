@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { OptionChess } from "./components/OptionChess"
 import { ChessBoard } from "./components/board/ChessBoard"
 import { ActionBar } from "./components/controls/ActionBar"
@@ -27,8 +27,10 @@ export const App: React.FC = () => {
     reason?: string
     nodesExpanded?: number
   } | null>(null)
+  const [isAutoPlaying, setIsAutoPlaying] = useState(false)
+  const autoPlayTokenRef = useRef(0)
   const [validationMessage, setValidationMessage] = useState("")
-  const { store, start, placePiece, setPuzzleInitial, setPuzzleEnd, calculateMoves, movePiece } =
+  const { store, start, placePiece, setPuzzleInitial, setPuzzleEnd, calculateMoves, movePiece, movePieceDirect } =
     useChessPuzzle()
 
   const canGenerate = useMemo(() => isValidDimensions(dimensions), [dimensions])
@@ -43,6 +45,8 @@ export const App: React.FC = () => {
   }, [hasWon])
 
   const handleGenerate = () => {
+    autoPlayTokenRef.current++
+    setIsAutoPlaying(false)
     if (!start(dimensions)) {
       setValidationMessage("Ingresa dimensiones validas y mayores a cero.")
       return
@@ -55,6 +59,8 @@ export const App: React.FC = () => {
   }
 
   const handleRestart = () => {
+    autoPlayTokenRef.current++
+    setIsAutoPlaying(false)
     const started = start(dimensions)
     if (!started) {
       setValidationMessage("Ingresa dimensiones validas y mayores a cero.")
@@ -76,7 +82,12 @@ export const App: React.FC = () => {
     )
   }, [store.puzzleInitial, store.puzzleEnd, store.board])
 
-  const handleSuggestSolution = () => {
+  const stopAutoPlay = () => {
+    autoPlayTokenRef.current++
+    setIsAutoPlaying(false)
+  }
+
+  const handleSuggestSolution = async () => {
     if (!store.puzzleInitial || !store.puzzleEnd) {
       setSolution({ moves: [], reason: "Primero define inicio y final." })
       return
@@ -94,9 +105,42 @@ export const App: React.FC = () => {
       reason: result.reason,
       nodesExpanded: result.nodesExpanded,
     })
+
+    if (!result.found || result.moves.length === 0) return
+
+    const token = ++autoPlayTokenRef.current
+    setIsAutoPlaying(true)
+    setStatus("play")
+
+    for (const m of result.moves) {
+      if (autoPlayTokenRef.current !== token) return
+
+      // Animación (usa el tipo de pieza del movimiento)
+      setMoveAnimation({
+        from: m.from,
+        to: m.to,
+        piece: m.pieceType,
+        id: Date.now(),
+      })
+      window.setTimeout(() => {
+        // solo limpia si seguimos en el mismo autoplay
+        if (autoPlayTokenRef.current === token) setMoveAnimation(null)
+      }, 220)
+
+      // Aplicar movimiento real al tablero
+      movePieceDirect(m.from, m.to)
+
+      // Pausa de 1s para observar
+      await new Promise<void>((resolve) => window.setTimeout(resolve, 1000))
+    }
+
+    if (autoPlayTokenRef.current === token) {
+      setIsAutoPlaying(false)
+    }
   }
 
   const handleCellClick = (position: Position) => {
+    if (isAutoPlaying) return
     switch (status) {
       case "setChessPieces":
         setSelectedCell(position)
@@ -145,6 +189,7 @@ export const App: React.FC = () => {
   }
 
   const handlePieceSelect = (piece: PieceType) => {
+    if (isAutoPlaying) return
     if (!selectedCell) return
     placePiece(selectedCell, piece)
     setSelectedCell(null)
@@ -185,30 +230,47 @@ export const App: React.FC = () => {
         primary={
           status !== "generate"
             ? {
-                label: "Sugerir solución",
-                disabled: !canSuggestSolution,
-                onClick: handleSuggestSolution,
-              }
+              label: isAutoPlaying ? "Detener" : "Sugerir solución",
+              disabled: !isAutoPlaying && !canSuggestSolution,
+              onClick: isAutoPlaying ? stopAutoPlay : handleSuggestSolution,
+            }
             : undefined
         }
       />
 
-      {solution && (
-        <SolutionPanel
-          moves={solution.moves}
-          reason={solution.reason}
-          nodesExpanded={solution.nodesExpanded}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          width: "100%",
+          marginTop: 16,
+        }}
+      >
+        <ChessBoard
+          board={store.board}
+          puzzleInitial={store.puzzleInitial}
+          puzzleEnd={store.puzzleEnd}
+          possibleMovements={store.possibleMovements}
+          onCellClick={handleCellClick}
+          moveAnimation={moveAnimation}
         />
-      )}
+        <div
+          style={{
+            width: "50%",
+            height: "100%",
+          }}
+        >
+          {solution && (
+            <SolutionPanel
+              moves={solution.moves}
+              reason={solution.reason}
+              nodesExpanded={solution.nodesExpanded}
+            />
+          )}
+        </div>
+      </div>
 
-      <ChessBoard
-        board={store.board}
-        puzzleInitial={store.puzzleInitial}
-        puzzleEnd={store.puzzleEnd}
-        possibleMovements={store.possibleMovements}
-        onCellClick={handleCellClick}
-        moveAnimation={moveAnimation}
-      />
     </div>
   )
 }
