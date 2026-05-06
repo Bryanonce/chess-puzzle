@@ -14,7 +14,8 @@ import "./App.css"
 
 export const App: React.FC = () => {
   const MOVE_MS = 500
-  const [dimensions, setDimensions] = useState<Dimensions>({ horizontal: 6, vertical: 3 })
+  const DEFAULT_DIMENSIONS: Dimensions = { horizontal: 6, vertical: 3 }
+  const [dimensions, setDimensions] = useState<Dimensions>(DEFAULT_DIMENSIONS)
   const [status, setStatus] = useState<GameStatus>("chooseDimensions")
   const [selectedCell, setSelectedCell] = useState<Position | null>(null)
   const [pieceToMove, setPieceToMove] = useState<Position | null>(null)
@@ -34,6 +35,7 @@ export const App: React.FC = () => {
   const [validationMessage, setValidationMessage] = useState("")
   const {
     store,
+    reset,
     start,
     placePiece,
     setPuzzleInitial,
@@ -72,6 +74,19 @@ export const App: React.FC = () => {
     setSolution(null)
   }
 
+  const handleResetToStart = () => {
+    autoPlayTokenRef.current++
+    setIsAutoPlaying(false)
+    setSelectedCell(null)
+    setPieceToMove(null)
+    setMoveAnimation(null)
+    setSolution(null)
+    setValidationMessage("")
+    setDimensions(DEFAULT_DIMENSIONS)
+    reset()
+    setStatus("chooseDimensions")
+  }
+
   const handleRestart = () => {
     autoPlayTokenRef.current++
     setIsAutoPlaying(false)
@@ -99,6 +114,12 @@ export const App: React.FC = () => {
       !store.board[store.puzzleEnd.row]?.[store.puzzleEnd.cell]
     )
   }, [store.puzzleInitial, store.puzzleEnd, store.board])
+
+  const hasSelectablePieceOnBoard = useMemo(() => {
+    return store.board.some((row) =>
+      row.some((cell) => !!cell && cell !== "obstacle"),
+    )
+  }, [store.board])
 
   const stopAutoPlay = () => {
     autoPlayTokenRef.current++
@@ -229,7 +250,12 @@ export const App: React.FC = () => {
       case "placePieces":
         return {
           label: "Siguiente: elegir pieza",
+          disabled: !hasSelectablePieceOnBoard,
           onClick: () => {
+            if (!hasSelectablePieceOnBoard) {
+              setValidationMessage("Primero coloca al menos una pieza movible en el tablero.")
+              return
+            }
             setValidationMessage("")
             setSelectedCell(null)
             setStatus("selectPiece")
@@ -269,15 +295,29 @@ export const App: React.FC = () => {
       default:
         return null
     }
-  }, [status, handleRestart, store.puzzleInitial, store.puzzleEnd, store.board])
+  }, [status, handleRestart, store.puzzleInitial, store.puzzleEnd, store.board, hasSelectablePieceOnBoard])
 
   return (
     <div
       className="app"
-      style={{ ["--move-ms" as string]: `${MOVE_MS}ms` } as CSSProperties}
+      style={{
+        ["--move-ms" as string]: `${MOVE_MS}ms`,
+        ["--board-cols" as string]: `${Math.max(1, dimensions.horizontal)}`,
+      } as CSSProperties}
     >
       <StatusHeader status={status} validationMessage={validationMessage} />
-      <DimensionForm dimensions={dimensions} onChange={setDimensions} />
+      {status !== "chooseDimensions" && (
+        <button className="floating-reset-btn" onClick={handleResetToStart}>
+          Reset
+        </button>
+      )}
+      {status === "chooseDimensions" ? (
+        <DimensionForm dimensions={dimensions} onChange={setDimensions} />
+      ) : (
+        <p className="status-label">
+          Tamaño de matriz: <strong>{dimensions.vertical} x {dimensions.horizontal}</strong>
+        </p>
+      )}
 
       <ActionBar
         primary={
@@ -302,15 +342,7 @@ export const App: React.FC = () => {
         }
       />
 
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          width: "100%",
-          marginTop: 16,
-        }}
-      >
+      <div className="content-layout">
         <ChessBoard
           board={store.board}
           puzzleInitial={store.puzzleInitial}
@@ -319,12 +351,7 @@ export const App: React.FC = () => {
           onCellClick={handleCellClick}
           moveAnimation={moveAnimation}
         />
-        <div
-          style={{
-            width: "50%",
-            height: "100%",
-          }}
-        >
+        <div className="solution-panel-wrap">
           {solution && (
             <SolutionPanel
               moves={solution.moves}

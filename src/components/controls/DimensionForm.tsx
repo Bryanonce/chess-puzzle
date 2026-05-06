@@ -11,25 +11,34 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
   onChange,
 }) => {
   return (
-    <div>
+    <div className="matrix-inputs">
+      <p className="status-label" style={{ marginBottom: 6 }}>
+        Tamaño de matriz:{" "}
+        <strong>{dimensions.vertical} x {dimensions.horizontal}</strong>
+      </p>
+      <div className="matrix-inputs-row">
       <InputComponents
         type="number"
         min={1}
-        placeholder="vertical"
+        placeholder="input_1 (filas)"
+        aria-label="input_1 filas"
         value={dimensions.vertical}
         onChange={(event) =>
           onChange({ ...dimensions, vertical: Number(event.target.value) })
         }
       />
+      <span className="matrix-multiplier">×</span>
       <InputComponents
         type="number"
         min={1}
-        placeholder="horizontal"
+        placeholder="input_2 (columnas)"
+        aria-label="input_2 columnas"
         value={dimensions.horizontal}
         onChange={(event) =>
           onChange({ ...dimensions, horizontal: Number(event.target.value) })
         }
       />
+      </div>
     </div>
   )
 }

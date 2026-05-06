@@ -27,6 +27,10 @@ const initialStore: PuzzleStore = {
 export const useChessPuzzle = () => {
   const [store, setStore] = useState<PuzzleStore>(initialStore)
 
+  const reset = () => {
+    setStore(initialStore)
+  }
+
   const start = (dimensions: Dimensions): boolean => {
     if (!isValidDimensions(dimensions)) return false
 
@@ -147,6 +151,7 @@ export const useChessPuzzle = () => {
 
   return {
     store,
+    reset,
     start,
     placePiece,
     setPuzzleInitial,

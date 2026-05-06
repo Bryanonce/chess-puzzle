@@ -30,14 +30,14 @@ export const ChessBoard: React.FC<ChessBoardProps> = ({
 
   const moveStyle = useMemo(() => {
     if (!moveAnimation) return null
-    const dx = (moveAnimation.to.cell - moveAnimation.from.cell) * 72
-    const dy = (moveAnimation.to.row - moveAnimation.from.row) * 72
+    const dxSteps = moveAnimation.to.cell - moveAnimation.from.cell
+    const dySteps = moveAnimation.to.row - moveAnimation.from.row
 
     return {
-      top: moveAnimation.from.row * 72,
-      left: moveAnimation.from.cell * 72,
-      ["--dx" as any]: `${dx}px`,
-      ["--dy" as any]: `${dy}px`,
+      ["--from-row" as any]: `${moveAnimation.from.row}`,
+      ["--from-cell" as any]: `${moveAnimation.from.cell}`,
+      ["--dx-steps" as any]: `${dxSteps}`,
+      ["--dy-steps" as any]: `${dySteps}`,
     }
   }, [moveAnimation])
 
@@ -79,6 +79,12 @@ export const ChessBoard: React.FC<ChessBoardProps> = ({
                     piece={piece}
                     style={{
                       border: isInitialCell ? "2px solid green" : "none",
+                      width: "calc(var(--cell-size) * 0.78)",
+                      height: "calc(var(--cell-size) * 0.78)",
+                      margin: 0,
+                      padding: 0,
+                      backgroundColor: "rgba(230, 230, 230, 0.95)",
+                      boxShadow: "0 1px 2px rgba(0, 0, 0, 0.2)",
                     }}
                   />
                 )}
