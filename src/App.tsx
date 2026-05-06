@@ -1,208 +1,179 @@
-import { useEffect, useState } from "react"
+import { useMemo, useState } from "react"
+import { ChessIcon } from "./components/ChessIcon"
 import { InputComponents } from "./components/InputComponents"
-import { OptionChess } from "./components/OptionChess";
-import type { IconDefinition } from "@fortawesome/free-solid-svg-icons";
+import { OptionChess } from "./components/OptionChess"
+import { useChessPuzzle } from "./hooks/useChessPuzzle"
+import type { GameStatus, PieceType, Position } from "./types/chess"
+import { isPositionEqual, isValidDimensions } from "./utils/board"
 import "./App.css"
-import { ChessIcon } from "./components/ChessIcon";
-import { useChessMovements, type IDimensions, type IPosition } from "./hooks/useChessMovements";
+
+const getStatusLabel = (status: GameStatus): string => {
+  switch (status) {
+    case "generate":
+      return "Genera un tablero"
+    case "setChessPieces":
+      return "Selecciona celdas y agrega piezas"
+    case "setInitial":
+      return "Selecciona la posicion inicial"
+    case "setEnd":
+      return "Selecciona la posicion final"
+    case "play":
+      return "Elige una pieza para ver sus movimientos"
+    case "move-piece":
+      return "Elige el destino de la pieza"
+    default:
+      return ""
+  }
+}
 
 export const App: React.FC = () => {
-  const [dimensions, setDimensions] = useState<IDimensions>({ horizontal: 0, vertical: 0 })
-  const { store, start, set, setPuzzleInitial, setPuzzleEnd, verifyMovements, move } = useChessMovements()
-  const [status, setStatus] = useState<"generate" | "setChessPieces" | "setInitial" | "setEnd" | "play" | "move-piece">("generate")
-  const [positionSelected, setPositionSelected] = useState<IPosition | null>(null)
-  const [pieceSelected, setPieceSelected] = useState<IPosition | null>(null)
-  const [openOptionChess, setOpenOptionChess] = useState<boolean>(false)
+  const [dimensions, setDimensions] = useState({ horizontal: 8, vertical: 8 })
+  const [status, setStatus] = useState<GameStatus>("generate")
+  const [selectedCell, setSelectedCell] = useState<Position | null>(null)
+  const [pieceToMove, setPieceToMove] = useState<Position | null>(null)
+  const [validationMessage, setValidationMessage] = useState("")
+  const { store, start, placePiece, setPuzzleInitial, setPuzzleEnd, calculateMoves, movePiece } =
+    useChessPuzzle()
 
+  const canGenerate = useMemo(() => isValidDimensions(dimensions), [dimensions])
 
-  useEffect(() => {
+  const handleGenerate = () => {
+    if (!start(dimensions)) {
+      setValidationMessage("Ingresa dimensiones validas y mayores a cero.")
+      return
+    }
+    setValidationMessage("")
+    setSelectedCell(null)
+    setPieceToMove(null)
+    setStatus("setChessPieces")
+  }
+
+  const handleCellClick = (position: Position) => {
     switch (status) {
       case "setChessPieces":
-        if (positionSelected) {
-          setOpenOptionChess(true)
-        } else {
-          setOpenOptionChess(false)
-        }
+        setSelectedCell(position)
         break
       case "setInitial":
-        if (positionSelected) {
-          setPuzzleInitial(positionSelected.row, positionSelected.cell)
-          setPositionSelected(null)
-        }
-        break;
+        setPuzzleInitial(position)
+        setSelectedCell(null)
+        break
       case "setEnd":
-        if (positionSelected) {
-          setPuzzleEnd(positionSelected.row, positionSelected.cell)
-          setPositionSelected(null)
-        }
-        break;
+        setPuzzleEnd(position)
+        setSelectedCell(null)
+        break
       case "play":
-        if (positionSelected) {
-          verifyMovements(positionSelected.row, positionSelected.cell)
-          setPieceSelected(positionSelected)
-          setPositionSelected(null)
-          setStatus("move-piece")
-        }
-        break;
+        if (!store.board[position.row][position.cell]) return
+        calculateMoves(position)
+        setPieceToMove(position)
+        setStatus("move-piece")
+        break
       case "move-piece":
-        if (positionSelected) {
-          move({ row: pieceSelected!.row, cell: pieceSelected!.cell }, { row: positionSelected.row, cell: positionSelected.cell })
-          if(pieceSelected?.row === store.puzzleInitial.row && pieceSelected?.cell === store.puzzleInitial.cell) {
-            setPuzzleInitial(positionSelected.row, positionSelected.cell)
-          }
-          setStatus("play")
-        }
-        break;
+        if (!pieceToMove) return
+        movePiece(pieceToMove, position)
+        setStatus("play")
+        break
       default:
         break
     }
-  }, [positionSelected])
-
-  const handleOnSelect = (param: IconDefinition) => {
-    if (positionSelected) {
-      set(positionSelected, param)
-      setPositionSelected(null)
-    }
   }
 
-  return <div style={{
-    width: "100%",
-    height: "100%",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
-    alignItems: "center"
-  }}>
-    <h1>Chess Puzzle</h1>
-    <div>
-      <InputComponents
-        placeholder="vertical"
-        value={dimensions.vertical}
-        onChange={(e) => setDimensions({ ...dimensions, vertical: Number(e.target.value) })}
-      />
+  const handlePieceSelect = (piece: PieceType) => {
+    if (!selectedCell) return
+    placePiece(selectedCell, piece)
+    setSelectedCell(null)
+  }
 
-      <InputComponents
-        placeholder="horizontal"
-        value={dimensions.horizontal}
-        onChange={(e) => setDimensions({ ...dimensions, horizontal: Number(e.target.value) })}
-      />
-    </div>
+  const nextButton = useMemo(() => {
+    switch (status) {
+      case "setChessPieces":
+        return { label: "Continuar", onClick: () => setStatus("setInitial") }
+      case "setInitial":
+        return { label: "Definir final", onClick: () => setStatus("setEnd") }
+      case "setEnd":
+        return { label: "Jugar", onClick: () => setStatus("play") }
+      default:
+        return null
+    }
+  }, [status])
 
-    <div>
-      {status === "generate" && <button
-        onClick={() => { start(dimensions); setStatus("setChessPieces") }}
-        style={{
-          appearance: "none",
-          padding: "16px",
-          backgroundColor: "lightblue",
-          borderRadius: "8px",
-          border: "none",
-          width: "100px",
-          margin: "8px"
-        }}
-      >
-        Generate
-      </button>}
+  return (
+    <div className="app">
+      <h1>Chess Puzzle</h1>
+      <p className="status-label">{getStatusLabel(status)}</p>
 
-      {status === "setChessPieces" && <button
-        onClick={() => setStatus("setInitial")}
-        style={{
-          appearance: "none",
-          padding: "16px",
-          backgroundColor: "lightblue",
-          borderRadius: "8px",
-          border: "none",
-          width: "100px",
-          margin: "8px"
-        }}
-      >
-        Continue
-      </button>}
+      <div>
+        <InputComponents
+          type="number"
+          min={1}
+          placeholder="vertical"
+          value={dimensions.vertical}
+          onChange={(event) =>
+            setDimensions((prev) => ({ ...prev, vertical: Number(event.target.value) }))
+          }
+        />
+        <InputComponents
+          type="number"
+          min={1}
+          placeholder="horizontal"
+          value={dimensions.horizontal}
+          onChange={(event) =>
+            setDimensions((prev) => ({ ...prev, horizontal: Number(event.target.value) }))
+          }
+        />
+      </div>
 
-      {status === "setInitial" && <button
-        onClick={() => setStatus("setEnd")}
-        style={{
-          appearance: "none",
-          padding: "16px",
-          backgroundColor: "lightblue",
-          borderRadius: "8px",
-          border: "none",
-          width: "100px",
-          margin: "8px"
-        }}
-      >
-        Seleccionar pieza
-      </button>}
+      <div className="actions">
+        {status === "generate" && (
+          <button className="primary-button" disabled={!canGenerate} onClick={handleGenerate}>
+            Generar
+          </button>
+        )}
+        {nextButton && (
+          <button className="primary-button" onClick={nextButton.onClick}>
+            {nextButton.label}
+          </button>
+        )}
+      </div>
 
-      {status === "setEnd" && <button
-        onClick={() => setStatus("play")}
-        style={{
-          appearance: "none",
-          padding: "16px",
-          backgroundColor: "lightblue",
-          borderRadius: "8px",
-          border: "none",
-          width: "100px",
-          margin: "8px"
-        }}
-      >
-        Seleccionar posicion final
-      </button>}
-    </div>
+      {validationMessage && <p className="error-text">{validationMessage}</p>}
+      {selectedCell && status === "setChessPieces" && <OptionChess handleOnSelect={handlePieceSelect} />}
 
-    {openOptionChess && status === "setChessPieces" && <OptionChess handleOnSelect={handleOnSelect} />}
+      <div className="board-wrapper">
+        {store.board.map((row, rowIndex) => (
+          <div className="board-row" key={rowIndex}>
+            {row.map((piece, cellIndex) => {
+              const cellPosition = { row: rowIndex, cell: cellIndex }
+              const isEndCell =
+                !!store.puzzleEnd && isPositionEqual(store.puzzleEnd, cellPosition)
+              const isInitialCell =
+                !!store.puzzleInitial && isPositionEqual(store.puzzleInitial, cellPosition)
+              const isPossibleCell = store.possibleMovements.some((movement) =>
+                isPositionEqual(movement, cellPosition),
+              )
 
-    {status}
-    <div style={{
-      width: "100%",
-      display: "flex",
-      flexDirection: "column",
-      justifyContent: "center",
-      alignItems: "center",
-      padding: "16px"
-    }}>
-      {
-        store.matrix.map((row, rowIndex) => {
-          return <div style={{
-            width: "100%",
-            height: "100%",
-            display: "flex",
-            flexDirection: "row",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-            key={rowIndex}>
-            {
-              row.map((cell, cellIndex) => {
-                return <div
-                  style={{
-                    width: "100px",
-                    height: "100px",
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    backgroundColor: store.puzzleEnd.row === rowIndex && store.puzzleEnd.cell === cellIndex ? "lightgreen" : (rowIndex + cellIndex) % 2 === 0 ? "white" : "rgb(0,0,0,0.8)",
-                  }} key={`${rowIndex}-${cellIndex}`}
-                  onClick={() => setPositionSelected({ row: rowIndex, cell: cellIndex })}
+              return (
+                <button
+                  className={`board-cell ${isEndCell ? "cell-end" : ""} ${
+                    (rowIndex + cellIndex) % 2 === 0 ? "cell-light" : "cell-dark"
+                  }`}
+                  key={`${rowIndex}-${cellIndex}`}
+                  onClick={() => handleCellClick(cellPosition)}
                 >
-                  <div
-                    style={{
-                      position: "absolute",
-                      padding: "16px",
-                      backgroundColor: store.posibleMovements.some(movement => movement.row === rowIndex && movement.cell === cellIndex) ? "rgba(0,255,0,0.5)" : "transparent",
-                      borderRadius: "50%",
-                      zIndex: 100
-                    }}
-                  ></div>
-                  {cell.iconName && <ChessIcon style={{
-                    border: store.puzzleInitial.row === rowIndex && store.puzzleInitial.cell === cellIndex ? "2px solid green" : "none",
-                  }} icon={cell} />}
-                </div>
-              })
-            }
+                  <div className={`movement-dot ${isPossibleCell ? "movement-visible" : ""}`} />
+                  {piece && (
+                    <ChessIcon
+                      piece={piece}
+                      style={{
+                        border: isInitialCell ? "2px solid green" : "none",
+                      }}
+                    />
+                  )}
+                </button>
+              )
+            })}
           </div>
-        })
-      }
+        ))}
+      </div>
     </div>
-  </div>
+  )
 }

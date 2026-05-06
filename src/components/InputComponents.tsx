@@ -8,6 +8,7 @@ export const InputComponents: React.FC<InputProps> = (props: InputProps) => {
     padding: "16px",
     borderRadius: "8px",
     borderColor: "black",
+    borderStyle: "solid",
     borderWidth: "2px",
     margin: "16px",
   }} {...props} />

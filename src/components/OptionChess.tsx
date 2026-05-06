@@ -1,28 +1,10 @@
-import { type IconDefinition } from "@fortawesome/free-solid-svg-icons"
-import {
-    faChessBishop,
-    faChessKing,
-    faChessKnight,
-    faChessPawn,
-    faChessQueen,
-    faChessRook,
-    faSkullCrossbones
-} from "@fortawesome/free-solid-svg-icons"
 import { ChessIcon } from "./ChessIcon"
+import type { PieceType } from "../types/chess"
+import { PIECE_OPTIONS } from "../utils/pieces"
 
-
-const icons = [
-    faChessBishop,
-    faChessKing,
-    faChessKnight,
-    faChessPawn,
-    faChessQueen,
-    faChessRook,
-    faSkullCrossbones
-]
 
 interface IOptionChess {
-    handleOnSelect: (param: IconDefinition) => void
+    handleOnSelect: (piece: PieceType) => void
 }
 
 export const OptionChess: React.FC<IOptionChess> = ({ handleOnSelect }) => {
@@ -54,8 +36,8 @@ export const OptionChess: React.FC<IOptionChess> = ({ handleOnSelect }) => {
                 zIndex: 1000
             }}
         >
-            {icons.map((icon) => (
-                <ChessIcon key={icon.iconName} icon={icon} onClick={() => handleOnSelect(icon)} />
+            {PIECE_OPTIONS.map((piece) => (
+                <ChessIcon key={piece} piece={piece} onClick={() => handleOnSelect(piece)} />
             ))}
         </div>
     </div>
